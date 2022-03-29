@@ -1,0 +1,88 @@
+<template>
+  <div class="chat container">
+    <h2 class="center teal-text">Chat App</h2>
+    <div class="card">
+      <div class="card-content">
+        <ul class="messages">
+          <li v-for="message in messages" :key="message.id">
+            <span class="teal-text">{{ message.name }} </span>
+            <span class="grey-text text-darken-3">{{ message.content }}</span>
+            <span class="grey-text time">{{ message.timestamp }}</span>
+          </li>
+        </ul>
+      </div>
+      <div class="card-action">
+        <NewMessage :name="name" />
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import NewMessage from "../components/NewMessage.vue";
+import db from "../firebase/init";
+import { collection, onSnapshot, orderBy, query } from "@firebase/firestore";
+import moment from "moment";
+
+export default {
+  name: "Chat",
+  props: ["name"],
+  data() {
+    return {
+      messages: [],
+    };
+  },
+  components: {
+    NewMessage,
+  },
+  created() {
+    let colRef = collection(db, "messages");
+    let q = query(colRef, orderBy("timestamp"));
+
+    onSnapshot(q, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type == "added") {
+          let doc = change.doc;
+          this.messages.push({
+            id: doc.id,
+            content: doc.data().content,
+            name: doc.data().name,
+            timestamp: moment(doc.data().timestamp).format("lll"),
+          });
+        }
+      });
+      // console.log(snapshot.docChanges());
+    });
+  },
+};
+</script>
+
+<style>
+.chat h2 {
+  font-size: 2.6em;
+  margin-bottom: 40px;
+}
+.chat span {
+  font-size: 1.4em;
+  margin: 0 5px;
+}
+.chat .time {
+  display: block;
+  font-size: 0.8em;
+}
+
+.messages {
+  max-height: 300px;
+  overflow: auto;
+}
+
+.messages::-webkit-scrollbar {
+  width: 3px;
+}
+.messages::-webkit-scrollbar-track {
+  background: #ddd;
+}
+.messages::-webkit-scrollbar-thumb {
+  background: #aaa;
+}
+</style>
